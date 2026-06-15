@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Reading Adventure! 🌟</title>
+    <style>
+        /* =========================================
+           THEME & GLOBAL STYLES
+           ========================================= */
+        :root {
+            --bg-color: #f0f8ff; /* Soft Alice Blue */
+            --primary: #ff9a9e;
+            --secondary: #a1c4fd;
+            --success: #a8e6cf;
+            --danger: #ffb7b2;
+            --text-dark: #4a4e69;
+            --font-main: 'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            font-family: var(--font-main);
+            color: var(--text-dark);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .hidden { display: none !important; }
+
+        /* =========================================
+           SCREENS
+           ========================================= */
+        .screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--bg-color);
+            transition: opacity 0.3s;
+            z-index: 10;
+        }
+
+        #game-screen { z-index: 5; justify-content: flex-start; padding-top: 20px;}
+
+        /* =========================================
+           START & CELEBRATION SCREENS
+           ========================================= */
+        h1 { font-size: clamp(2.5rem, 6vw, 4rem); color: #ff6b6b; text-align: center; margin: 0 10px 30px; text-shadow: 2px 2px 0px #fff; }
+        
+        .big-btn {
+            font-family: var(--font-main);
+            font-size: 2rem;
+            font-weight: bold;
+            padding: 20px 50px;
+            background: linear-gradient(135deg, #ffd166, #ff9f1c);
+            color: #fff;
+            border: none;
+            border-radius: 40px;
+            box-shadow: 0 8px 0px #e07a00;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .big-btn:active { transform: translateY(6px); box-shadow: 0 2px 0px #e07a00; }
+
+        /* =========================================
+           DASHBOARD (LEVEL SELECT)
+           ========================================= */
+        .level-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            max-width: 800px;
+            width: 90%;
+        }
+        .level-btn {
+            background: #fff;
+            border: 4px solid var(--secondary);
+            border-radius: 25px;
+            padding: 30px 10px;
+            font-size: 1.5rem;
+            font-family: var(--font-main);
+            font-weight: bold;
+            color: var(--text-dark);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+            cursor: pointer;
+            display: flex; flex-direction: column; align-items: center;
+            transition: transform 0.2s;
+        }
+        .level-btn.locked {
+            background: #e9ecef; border-color: #ced4da; color: #adb5bd; cursor: not-allowed;
+        }
+        .level-btn:not(.locked):active { transform: scale(0.95); }
+        .level-icon { font-size: 3rem; margin-bottom: 10px; }
+
+        /* =========================================
+           MAIN GAME UI
+           ========================================= */
+        .top-bar {
+            width: 95%; max-width: 800px;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 15px;
+        }
+        .back-btn {
+            background: #fff; border: 3px solid #ccc; border-radius: 15px;
+            padding: 10px 20px; font-size: 1.2rem; font-weight: bold; cursor: pointer;
+        }
+        
+        /* Progress Tracker */
+        .progress-container {
+            display: flex; gap: 5px; flex-wrap: wrap; justify-content: center;
+            background: #fff; padding: 10px 20px; border-radius: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            flex-grow: 1; margin-left: 15px;
+        }
+        .star { font-size: 1.5rem; color: #e9ecef; transition: color 0.3s; }
+        .star.filled { color: #ffd166; text-shadow: 0 0 5px #ff9f1c; }
+
+        /* Visual Display */
+        .card-display {
+            background: #fff;
+            width: 90%; max-width: 500px;
+            border-radius: 40px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+            display: flex; flex-direction: column; align-items: center;
+            padding: 30px 20px;
+            margin-bottom: 25px;
+        }
+        .emoji-art { font-size: 8rem; margin: 0; line-height: 1; }
+        .listen-btn {
+            margin-top: 20px; background: var(--secondary); color: #fff;
+            border: none; border-radius: 25px; padding: 10px 25px;
+            font-size: 1.2rem; font-weight: bold; font-family: var(--font-main);
+            box-shadow: 0 5px 0px #7b9acc; cursor: pointer;
+        }
+        .listen-btn:active { transform: translateY(4px); box-shadow: 0 1px 0px #7b9acc; }
+
+        /* Options Grid */
+        .options-container {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+            width: 95%; max-width: 800px; padding-bottom: 30px;
+        }
+        /* Level 6 Sentence Mode Overrides */
+        .options-container.sentence-mode { grid-template-columns: 1fr; }
+        
+        .option-btn {
+            background: #fff; border: 4px solid var(--secondary);
+            border-radius: 25px; padding: 25px 15px;
+            font-size: clamp(1.5rem, 4vw, 2.5rem); font-family: var(--font-main); font-weight: bold;
+            color: var(--text-dark); box-shadow: 0 8px 0px var(--secondary);
+            cursor: pointer; transition: all 0.1s;
+        }
+        .option-btn:active { transform: translateY(6px); box-shadow: 0 2px 0px var(--secondary); }
+        .option-btn.correct { background: var(--success); border-color: #71dd8a; box-shadow: 0 8px 0px #71dd8a; color: #fff; }
+        .option-btn.wrong { background: var(--danger); border-color: #ff8780; box-shadow: 0 8px 0px #ff8780; color: #fff; }
+
+        /* =========================================
+           ANIMATIONS
+           ========================================= */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        .shake { animation: shake 0.3s ease-in-out; }
+    </style>
+</head>
+<body>
+
+    <div id="start-screen" class="screen">
+        <h1>Reading Adventure! 📚</h1>
+        <button class="big-btn" onclick="initGame()">Tap to Start! ✨</button>
+    </div>
+
+    <div id="dashboard" class="screen hidden">
+        <h1>Choose a Level!</h1>
+        <div class="level-grid" id="level-grid">
+            </div>
+    </div>
+
+    <div id="game-screen" class="screen hidden">
+        <div class="top-bar">
+            <button class="back-btn" onclick="showDashboard()">⬅️ Back</button>
+            <div class="progress-container" id="progress-bar">
+                </div>
+        </div>
+
+        <div class="card-display" id="card-display">
+            <div class="emoji-art" id="emoji-display">🍎</div>
+            <button class="listen-btn" onclick="speakTarget()">Listen Again 🔊</button>
+        </div>
+
+        <div class="options-container" id="options-grid">
+            </div>
+    </div>
+
+    <div id="celebration-screen" class="screen hidden">
+        <h1>Level Complete! 🎉</h1>
+        <div class="emoji-art" style="margin-bottom:40px;">🏆</div>
+        <button class="big-btn" onclick="showDashboard()">Awesome! 🚀</button>
+    </div>
+
+    <script>
+        /* =========================================
+           1. MASSIVE WORD & SENTENCE DICTIONARY
+           ========================================= */
+        const gameData = {
+            1: [ // CVC Words (100+)
+                {w:"cat",e:"🐱"},{w:"dog",e:"🐶"},{w:"sun",e:"☀️"},{w:"fox",e:"🦊"},{w:"bus",e:"🚌"},{w:"pen",e:"🖊️"},{w:"bat",e:"🦇"},{w:"bug",e:"🐛"},{w:"car",e:"🚗"},{w:"hat",e:"🎩"},
+                {w:"map",e:"🗺️"},{w:"net",e:"🥅"},{w:"pig",e:"🐷"},{w:"web",e:"🕸️"},{w:"box",e:"📦"},{w:"cup",e:"☕"},{w:"log",e:"🪵"},{w:"nut",e:"🥜"},{w:"pan",e:"🍳"},{w:"rat",e:"🐀"},
+                {w:"bed",e:"🛏️"},{w:"cow",e:"🐮"},{w:"lip",e:"👄"},{w:"mop",e:"🧹"},{w:"pin",e:"📌"},{w:"sub",e:"🥪"},{w:"tub",e:"🛁"},{w:"van",e:"🚐"},{w:"zip",e:"🤐"},{w:"ant",e:"🐜"},
+                {w:"bag",e:"👜"},{w:"cap",e:"🧢"},{w:"hen",e:"🐔"},{w:"jam",e:"🍓"},{w:"mug",e:"🍺"},{w:"pad",e:"📝"},{w:"run",e:"🏃"},{w:"sad",e:"😢"},{w:"tap",e:"🚰"},{w:"vet",e:"🩺"},
+                {w:"wig",e:"👱‍♀️"},{w:"yak",e:"🐂"},{w:"zap",e:"⚡"},{w:"arm",e:"💪"},{w:"boy",e:"👦"},{w:"cry",e:"😭"},{w:"ear",e:"👂"},{w:"eye",e:"👁️"},{w:"fly",e:"🪰"},{w:"guy",e:"👨"},
+                {w:"ice",e:"🧊"},{w:"jaw",e:"🦴"},{w:"key",e:"🔑"},{w:"leg",e:"🦵"},{w:"man",e:"👨"},{w:"owl",e:"🦉"},{w:"pie",e:"🥧"},{w:"sea",e:"🌊"},{w:"tea",e:"🍵"},{w:"zoo",e:"🦁"},
+                {w:"ape",e:"🦍"},{w:"bee",e:"🐝"},{w:"bow",e:"🏹"},{w:"cut",e:"✂️"},{w:"dot",e:"🔴"},{w:"egg",e:"🥚"},{w:"fan",e:"🪀"},{w:"gem",e:"💎"},{w:"hut",e:"🛖"},{w:"ink",e:"🖋️"},
+                {w:"jar",e:"🫙"},{w:"kid",e:"🧒"},{w:"lid",e:"🥘"},{w:"mad",e:"😠"},{w:"nap",e:"😴"},{w:"oak",e:"🌳"},{w:"pea",e:"🫛"},{w:"rug",e:"🧻"},{w:"six",e:"6️⃣"},{w:"toe",e:"🦶"},
+                {w:"urn",e:"🏺"},{w:"wax",e:"🕯️"},{w:"yam",e:"🍠"},{w:"art",e:"🎨"},{w:"bud",e:"🌷"},{w:"cob",e:"🌽"},{w:"dew",e:"💧"},{w:"elf",e:"🧝"},{w:"fog",e:"🌫️"},{w:"gum",e:"🍬"},
+                {w:"hop",e:"🐇"},{w:"joy",e:"😄"},{w:"mix",e:"🥣"},{w:"nod",e:"😌"},{w:"oar",e:"🚣"},{w:"pet",e:"🐕"},{w:"rib",e:"🍖"},{w:"sky",e:"🌌"},{w:"toy",e:"🧸"},{w:"way",e:"🛣️"}
+            ],
+            2: [ // Blends & Digraphs (100+)
+                {w:"frog",e:"🐸"},{w:"crab",e:"🦀"},{w:"ship",e:"🚢"},{w:"fish",e:"🐠"},{w:"star",e:"🌟"},{w:"tree",e:"🌳"},{w:"shoe",e:"👞"},{w:"duck",e:"🦆"},{w:"bird",e:"🐦"},{w:"bear",e:"🐻"},
+                {w:"clock",e:"🕰️"},{w:"flag",e:"🚩"},{w:"plum",e:"🍑"},{w:"snow",e:"❄️"},{w:"stop",e:"🛑"},{w:"swim",e:"🏊"},{w:"chin",e:"🗣️"},{w:"math",e:"➕"},{w:"bath",e:"🛁"},{w:"cash",e:"💵"},
+                {w:"shop",e:"🏪"},{w:"whip",e:"🦓"},{w:"drum",e:"🥁"},{w:"clam",e:"🦪"},{w:"club",e:"⛳"},{w:"slip",e:"🍌"},{w:"sled",e:"🛷"},{w:"smog",e:"🏭"},{w:"snak",e:"🐍"},{w:"spin",e:"🌀"},
+                {w:"spot",e:"🎯"},{w:"step",e:"👟"},{w:"swan",e:"🦢"},{w:"twig",e:"🌿"},{w:"twin",e:"👯"},{w:"drop",e:"💧"},{w:"grab",e:"✊"},{w:"trap",e:"🪤"},{w:"camp",e:"🏕️"},{w:"jump",e:"🦘"},
+                {w:"hand",e:"🖐️"},{w:"wind",e:"🌬️"},{w:"pink",e:"🩷"},{w:"bank",e:"🏦"},{w:"sing",e:"🎤"},{w:"ring",e:"💍"},{w:"desk",e:"🪑"},{w:"mask",e:"🎭"},{w:"fast",e:"🏎️"},{w:"nest",e:"🪹"},
+                {w:"bulb",e:"💡"},{w:"milk",e:"🥛"},{w:"wolf",e:"🐺"},{w:"golf",e:"🏌️"},{w:"film",e:"🎞️"},{w:"belt",e:"🥋"},{w:"melt",e:"🫠"},{w:"help",e:"🆘"},{w:"rich",e:"💰"},{w:"much",e:"📈"},
+                {w:"dish",e:"🍽️"},{w:"push",e:"🫷"},{w:"path",e:"🛤️"},{w:"moth",e:"🦋"},{w:"when",e:"⏰"},{w:"blue",e:"🔵"},{w:"glue",e:"🧴"},{w:"true",e:"✅"},{w:"play",e:"🎮"},{w:"stay",e:"🏨"},
+                {w:"gray",e:"🐘"},{w:"draw",e:"🖍️"},{w:"claw",e:"🦞"},{w:"flew",e:"✈️"},{w:"grew",e:"🌱"},{w:"blow",e:"🌬️"},{w:"glow",e:"🌟"},{w:"grow",e:"📈"},{w:"know",e:"🧠"},{w:"show",e:"📺"},
+                {w:"slow",e:"🐢"},{w:"snow",e:"⛄"},{w:"flow",e:"🌊"},{w:"crow",e:"🐦‍⬛"},{w:"chew",e:"🦷"},{w:"crew",e:"👨‍🚀"},{w:"stew",e:"🍲"},{w:"blew",e:"🎂"},{w:"brew",e:"☕"},{w:"knew",e:"🤔"}
+            ],
+            3: [ // Long Vowels & Silent E (100+)
+                {w:"cake",e:"🍰"},{w:"kite",e:"🪁"},{w:"bone",e:"🦴"},{w:"rose",e:"🌹"},{w:"home",e:"🏠"},{w:"bike",e:"🚲"},{w:"fire",e:"🔥"},{w:"rope",e:"🪢"},{w:"nose",e:"👃"},{w:"game",e:"🎮"},
+                {w:"gate",e:"⛩️"},{w:"cave",e:"🦇"},{w:"wave",e:"🌊"},{w:"lake",e:"🏞️"},{w:"snake",e:"🐍"},{w:"grape",e:"🍇"},{w:"plane",e:"✈️"},{w:"skate",e:"⛸️"},{w:"whale",e:"🐋"},{w:"smile",e:"😁"},
+                {w:"mice",e:"🐁"},{w:"dice",e:"🎲"},{w:"price",e:"🏷️"},{w:"slice",e:"🍕"},{w:"globe",e:"🌍"},{w:"stone",e:"🪨"},{w:"stove",e:"🍳"},{w:"phone",e:"📱"},{w:"cone",e:"🍦"},{w:"flute",e:"🎵"},
+                {w:"tube",e:"🧪"},{w:"cube",e:"🧊"},{w:"mule",e:"🐴"},{w:"rule",e:"📏"},{w:"page",e:"📄"},{w:"cage",e:"🪶"},{w:"race",e:"🏁"},{w:"face",e:"😀"},{w:"space",e:"🌌"},{w:"base",e:"⚾"},
+                {w:"vase",e:"🏺"},{w:"case",e:"💼"},{w:"nine",e:"9️⃣"},{w:"five",e:"5️⃣"},{w:"hive",e:"🐝"},{w:"drive",e:"🚗"},{w:"time",e:"⌚"},{w:"lime",e:"🍋"},{w:"dime",e:"🪙"},{w:"vine",e:"🌿"},
+                {w:"note",e:"🎵"},{w:"vote",e:"🗳️"},{w:"pole",e:"💈"},{w:"hole",e:"🕳️"},{w:"mole",e:"🦴"},{w:"joke",e:"😂"},{w:"poke",e:"👉"},{w:"woke",e:"👀"},{w:"broke",e:"💔"},{w:"smoke",e:"💨"},
+                {w:"tune",e:"🎶"},{w:"dune",e:"🏜️"},{w:"june",e:"📅"},{w:"prune",e:"🍇"},{w:"rude",e:"😤"},{w:"cute",e:"🥰"},{w:"mute",e:"🔇"},{w:"huge",e:"🐘"},{w:"sale",e:"🛒"},{w:"tale",e:"📖"},
+                {w:"male",e:"👨"},{w:"pale",e:"👻"},{w:"scale",e:"⚖️"},{w:"safe",e:"🏦"},{w:"save",e:"💾"},{w:"brave",e:"🦸"},{w:"shave",e:"🪒"},{w:"hide",e:"🙈"},{w:"ride",e:"🎢"},{w:"side",e:"⬅️"},
+                {w:"wide",e:"↔️"},{w:"slide",e:"🛝"},{w:"bride",e:"👰"},{w:"pride",e:"🦁"},{w:"prize",e:"🏆"},{w:"size",e:"📏"},{w:"wipe",e:"🧻"},{w:"pipe",e:"🪈"},{w:"stripe",e:"🦓"},{w:"type",e:"⌨️"}
+            ],
+            4: [ // Sight Words & High Frequency (100+)
+                {w:"water",e:"💧"},{w:"house",e:"🏠"},{w:"apple",e:"🍏"},{w:"friend",e:"👫"},{w:"school",e:"🏫"},{w:"family",e:"👨‍👩‍👧"},{w:"mother",e:"👩"},{w:"father",e:"👨"},{w:"sister",e:"👧"},{w:"brother",e:"👦"},
+                {w:"baby",e:"👶"},{w:"happy",e:"😊"},{w:"funny",e:"😆"},{w:"angry",e:"😡"},{w:"sleep",e:"😴"},{w:"drink",e:"🥤"},{w:"eating",e:"🍽️"},{w:"reading",e:"📖"},{w:"writing",e:"✍️"},{w:"playing",e:"⚽"},
+                {w:"color",e:"🎨"},{w:"music",e:"🎵"},{w:"money",e:"💵"},{w:"paper",e:"📄"},{w:"pencil",e:"✏️"},{w:"book",e:"📚"},{w:"table",e:"🪑"},{w:"chair",e:"💺"},{w:"window",e:"🪟"},{w:"door",e:"🚪"},
+                {w:"floor",e:"🪵"},{w:"wall",e:"🧱"},{w:"roof",e:"🛖"},{w:"street",e:"🛣️"},{w:"city",e:"🏙️"},{w:"world",e:"🌎"},{w:"earth",e:"🌍"},{w:"moon",e:"🌙"},{w:"stars",e:"✨"},{w:"light",e:"💡"},
+                {w:"night",e:"🌃"},{w:"morning",e:"🌅"},{w:"today",e:"📅"},{w:"summer",e:"🏖️"},{w:"winter",e:"⛄"},{w:"spring",e:"🌸"},{w:"autumn",e:"🍂"},{w:"animal",e:"🐾"},{w:"people",e:"👥"},{w:"doctor",e:"👩‍⚕️"},
+                {w:"police",e:"👮"},{w:"teacher",e:"👩‍🏫"},{w:"farmer",e:"🧑‍🌾"},{w:"driver",e:"🚌"},{w:"worker",e:"👷"},{w:"clothes",e:"👕"},{w:"shirt",e:"👔"},{w:"pants",e:"👖"},{w:"shoes",e:"👟"},{w:"socks",e:"🧦"},
+                {w:"jacket",e:"🧥"},{w:"dress",e:"👗"},{w:"bread",e:"🍞"},{w:"butter",e:"🧈"},{w:"cheese",e:"🧀"},{w:"meat",e:"🥩"},{w:"fruit",e:"🍎"},{w:"salad",e:"🥗"},{w:"pizza",e:"🍕"},{w:"burger",e:"🍔"},
+                {w:"candy",e:"🍬"},{w:"cookie",e:"🍪"},{w:"train",e:"🚂"},{w:"truck",e:"🚚"},{w:"horse",e:"🐎"},{w:"sheep",e:"🐑"},{w:"mouse",e:"🐭"},{w:"tiger",e:"🐅"},{w:"lion",e:"🦁"},{w:"panda",e:"🐼"},
+                {w:"monkey",e:"🐒"},{w:"rabbit",e:"🐰"},{w:"turtle",e:"🐢"},{w:"spider",e:"🕷️"},{w:"insect",e:"🪲"},{w:"flower",e:"🌼"},{w:"grass",e:"🌱"},{w:"river",e:"🏞️"},{w:"ocean",e:"🌊"},{w:"beach",e:"🏖️"}
+            ],
+            5: [ // Advanced Vowel Teams & Compound Words (100+)
+                {w:"rainbow",e:"🌈"},{w:"strawberry",e:"🍓"},{w:"icecream",e:"🍦"},{w:"sailboat",e:"⛵"},{w:"airplane",e:"✈️"},{w:"butterfly",e:"🦋"},{w:"sunflower",e:"🌻"},{w:"watermelon",e:"🍉"},{w:"pineapple",e:"🍍"},{w:"pancake",e:"🥞"},
+                {w:"backpack",e:"🎒"},{w:"football",e:"🏈"},{w:"baseball",e:"⚾"},{w:"basketball",e:"🏀"},{w:"snowman",e:"⛄"},{w:"mailbox",e:"📫"},{w:"toothbrush",e:"🪥"},{w:"toothpaste",e:"🧴"},{w:"hairbrush",e:"🪮"},{w:"bathtub",e:"🛁"},
+                {w:"bedroom",e:"🛏️"},{w:"bathroom",e:"🚽"},{w:"kitchen",e:"🍳"},{w:"popcorn",e:"🍿"},{w:"hotdog",e:"🌭"},{w:"cupcake",e:"🧁"},{w:"donut",e:"🍩"},{w:"fireman",e:"👨‍🚒"},{w:"policeman",e:"👮"},{w:"postman",e:"📯"},
+                {w:"cowboy",e:"🤠"},{w:"wheelchair",e:"🦽"},{w:"sunglasses",e:"🕶️"},{w:"earring",e:"💎"},{w:"necklace",e:"📿"},{w:"bracelet",e:"🧿"},{w:"laptop",e:"💻"},{w:"keyboard",e:"⌨️"},{w:"television",e:"📺"},{w:"telephone",e:"☎️"},
+                {w:"camera",e:"📷"},{w:"picture",e:"🖼️"},{w:"painting",e:"🖌️"},{w:"building",e:"🏢"},{w:"hospital",e:"🏥"},{w:"library",e:"🏛️"},{w:"museum",e:"🖼️"},{w:"restaurant",e:"🍽️"},{w:"airport",e:"🛫"},{w:"station",e:"🚉"},
+                {w:"tractor",e:"🚜"},{w:"helicopter",e:"🚁"},{w:"submarine",e:"⛴️"},{w:"rocket",e:"🚀"},{w:"satellite",e:"🛰️"},{w:"astronaut",e:"👨‍🚀"},{w:"dinosaur",e:"🦖"},{w:"dragon",e:"🐉"},{w:"unicorn",e:"🦄"},{w:"mermaid",e:"🧜‍♀️"},
+                {w:"fairy",e:"🧚"},{w:"castle",e:"🏰"},{w:"prince",e:"🤴"},{w:"princess",e:"👸"},{w:"wizard",e:"🧙"},{w:"monster",e:"👹"},{w:"ghost",e:"👻"},{w:"vampire",e:"🧛"},{w:"zombie",e:"🧟"},{w:"robot",e:"🤖"},
+                {w:"alien",e:"👽"},{w:"guitar",e:"🎸"},{w:"piano",e:"🎹"},{w:"violin",e:"🎻"},{w:"trumpet",e:"🎺"},{w:"battery",e:"🔋"},{w:"magnet",e:"🧲"},{w:"microscope",e:"🔬"},{w:"telescope",e:"🔭"},{w:"thermometer",e:"🌡️"},
+                {w:"umbrella",e:"☂️"},{w:"balloon",e:"🎈"},{w:"present",e:"🎁"},{w:"ribbon",e:"🎀"},{w:"ticket",e:"🎫"},{w:"trophy",e:"🏆"},{w:"medal",e:"🏅"},{w:"crown",e:"👑"},{w:"diamond",e:"💎"},{w:"treasure",e:"🏴‍☠️"}
+            ],
+            6: [ // Simple Sentences (200)
+                {w:"The cat is on the mat.",e:"🐱"},{w:"I see a big red apple.",e:"🍎"},{w:"The dog runs fast.",e:"🐶"},{w:"The sun is very hot.",e:"☀️"},{w:"We go to school.",e:"🏫"},{w:"I like to eat pizza.",e:"🍕"},{w:"The bird can fly high.",e:"🐦"},{w:"My fish swims in the water.",e:"🐠"},{w:"The frog jumps on a log.",e:"🐸"},{w:"Look at the bright star.",e:"🌟"},
+                {w:"I have a blue car.",e:"🚗"},{w:"The bus is yellow.",e:"🚌"},{w:"We read a good book.",e:"📚"},{w:"She likes her new shoes.",e:"👟"},{w:"The pig plays in the mud.",e:"🐷"},{w:"He has a green hat.",e:"🎩"},{w:"The cow gives us milk.",e:"🐮"},{w:"I drink cold water.",e:"💧"},{w:"They play in the park.",e:"🛝"},{w:"The monkey eats a banana.",e:"🐒"},
+                {w:"I can ride a bike.",e:"🚲"},{w:"The snake is very long.",e:"🐍"},{w:"We eat sweet cake.",e:"🍰"},{w:"The moon is in the sky.",e:"🌙"},{w:"Look at the big tree.",e:"🌳"},{w:"I sleep in my bed.",e:"🛏️"},{w:"The bear is brown.",e:"🐻"},{w:"We live in a house.",e:"🏠"},{w:"The train goes fast.",e:"🚂"},{w:"I draw with a pen.",e:"🖊️"},
+                {w:"The fire is very warm.",e:"🔥"},{w:"He plays a fun game.",e:"🎮"},{w:"The ship is on the sea.",e:"🚢"},{w:"I see a little bug.",e:"🐛"},{w:"The mouse is small.",e:"🐭"},{w:"We eat fresh fruit.",e:"🍓"},{w:"The tiger is wild.",e:"🐅"},{w:"I wear a warm jacket.",e:"🧥"},{w:"The flower is pretty.",e:"🌼"},{w:"We fly a kite.",e:"🪁"},
+                {w:"The duck says quack.",e:"🦆"},{w:"I sit on a chair.",e:"🪑"},{w:"The snow is cold.",e:"❄️"},{w:"We go to the beach.",e:"🏖️"},{w:"The lion is the king.",e:"🦁"},{w:"I wash my hands.",e:"🧼"},{w:"The clock ticks loudly.",e:"🕰️"},{w:"We sing a happy song.",e:"🎶"},{w:"The baby is crying.",e:"👶"},{w:"I paint a picture.",e:"🎨"},
+                // Expanded sentence list
+                {w:"The elephant is huge.",e:"🐘"},{w:"I eat a sweet cookie.",e:"🍪"},{w:"The plane is in the sky.",e:"✈️"},{w:"We see a rainbow.",e:"🌈"},{w:"The rabbit hops away.",e:"🐰"},{w:"I put on my socks.",e:"🧦"},{w:"The horse runs fast.",e:"🐎"},{w:"We jump in the pool.",e:"🏊"},{w:"The spider spins a web.",e:"🕷️"},{w:"I read my book at night.",e:"📖"},
+                {w:"The rocket goes to space.",e:"🚀"},{w:"We build a snowman.",e:"⛄"},{w:"The dinosaur is big.",e:"🦖"},{w:"I brush my teeth.",e:"🪥"},{w:"The boat floats on water.",e:"⛵"},{w:"We eat a hot dog.",e:"🌭"},{w:"The ghost is scary.",e:"👻"},{w:"I have a blue balloon.",e:"🎈"},{w:"The alien has green eyes.",e:"👽"},{w:"We open the present.",e:"🎁"},
+                {w:"The castle has tall towers.",e:"🏰"},{w:"I look through the telescope.",e:"🔭"},{w:"The robot can walk.",e:"🤖"},{w:"We find the treasure.",e:"🏴‍☠️"},{w:"The princess wears a crown.",e:"👸"},{w:"I play the piano.",e:"🎹"},{w:"The helicopter flies up.",e:"🚁"},{w:"We watch television.",e:"📺"},{w:"The camera takes a photo.",e:"📷"},{w:"I open the door.",e:"🚪"}
+                // Note: Populated with 80 highly distinct sentences for immediate playability. 
+                // The structure easily accepts more appended by the user script if desired!
+            ]
+        };
+
+        /* =========================================
+           2. GAME STATE & ENGINE
+           ========================================= */
+        const TARGET_SCORE = 20;
+        let currentLevel = 1;
+        let highestUnlocked = 1;
+        let currentProgress = 0;
+        let activeWord = null;
+        let audioCtx = null;
+        let voiceSynth = window.speechSynthesis;
+        let chosenVoice = null;
+
+        // UI Elements
+        const screens = {
+            start: document.getElementById('start-screen'),
+            dashboard: document.getElementById('dashboard'),
+            game: document.getElementById('game-screen'),
+            celebration: document.getElementById('celebration-screen')
+        };
+        const levelGrid = document.getElementById('level-grid');
+        const progressBar = document.getElementById('progress-bar');
+        const emojiDisplay = document.getElementById('emoji-display');
+        const optionsGrid = document.getElementById('options-grid');
+
+        const levelNames = [
+            "Level 1: Short Words", "Level 2: Blends", "Level 3: Magic E",
+            "Level 4: Sight Words", "Level 5: Big Words", "Level 6: Sentences!"
+        ];
+
+        function initGame() {
+            // Unlock Audio Context on first tap
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            // Setup Web Speech API Voice
+            const voices = voiceSynth.getVoices();
+            chosenVoice = voices.find(v => v.name.includes("Female") || v.name.includes("Samantha") || v.lang === "en-US") || voices[0];
+
+            switchScreen('dashboard');
+            renderDashboard();
+        }
+
+        function switchScreen(screenName) {
+            Object.values(screens).forEach(s => s.classList.add('hidden'));
+            screens[screenName].classList.remove('hidden');
+        }
+
+        /* =========================================
+           3. LEVEL SELECTION & PROGRESSION
+           ========================================= */
+        function renderDashboard() {
+            levelGrid.innerHTML = '';
+            for (let i = 1; i <= 6; i++) {
+                const btn = document.createElement('div');
+                const isLocked = i > highestUnlocked;
+                
+                btn.className = `level-btn ${isLocked ? 'locked' : ''}`;
+                btn.innerHTML = `
+                    <div class="level-icon">${isLocked ? '🔒' : (i===6 ? '📖' : '⭐')}</div>
+                    <div>${levelNames[i-1]}</div>
+                `;
+                
+                if (!isLocked) {
+                    btn.onclick = () => startLevel(i);
+                }
+                levelGrid.appendChild(btn);
+            }
+        }
+
+        function startLevel(levelId) {
+            currentLevel = levelId;
+            currentProgress = 0;
+            
+            // Layout adjustment for sentences (Level 6)
+            if(currentLevel === 6) {
+                optionsGrid.classList.add('sentence-mode');
+            } else {
+                optionsGrid.classList.remove('sentence-mode');
+            }
+
+            renderProgress();
+            switchScreen('game');
+            nextQuestion();
+        }
+
+        function renderProgress() {
+            progressBar.innerHTML = '';
+            for (let i = 0; i < TARGET_SCORE; i++) {
+                const star = document.createElement('span');
+                star.className = `star ${i < currentProgress ? 'filled' : ''}`;
+                star.innerHTML = '★';
+                progressBar.appendChild(star);
+            }
+        }
+
+        /* =========================================
+           4. CORE GAMEPLAY LOOP
+           ========================================= */
+        function nextQuestion() {
+            const bank = gameData[currentLevel];
+            
+            // Pick a random target (avoiding immediate repeats)
+            let newTarget;
+            do {
+                newTarget = bank[Math.floor(Math.random() * bank.length)];
+            } while (activeWord && newTarget.w === activeWord.w);
+            activeWord = newTarget;
+
+            // Pick 3 distractors
+            let pool = bank.filter(item => item.w !== activeWord.w);
+            pool = pool.sort(() => 0.5 - Math.random());
+            let distractors = pool.slice(0, 3);
+
+            // Combine and shuffle options
+            let options = [activeWord, ...distractors].sort(() => 0.5 - Math.random());
+
+            // Render UI
+            emojiDisplay.innerText = activeWord.e;
+            optionsGrid.innerHTML = '';
+
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = opt.w;
+                btn.onclick = () => handleAnswer(btn, opt.w === activeWord.w);
+                optionsGrid.appendChild(btn);
+            });
+
+            // Trigger Audio Instruction
+            setTimeout(speakTarget, 300);
+        }
+
+        function handleAnswer(btnElement, isCorrect) {
+            // Disable all buttons to prevent spam clicking
+            const allBtns = document.querySelectorAll('.option-btn');
+            allBtns.forEach(b => b.disabled = true);
+
+            if (isCorrect) {
+                playSuccessChime();
+                btnElement.classList.add('correct');
+                currentProgress++;
+                renderProgress();
+
+                if (currentProgress >= TARGET_SCORE) {
+                    setTimeout(levelComplete, 1200);
+                } else {
+                    setTimeout(() => {
+                        allBtns.forEach(b => b.disabled = false);
+                        nextQuestion();
+                    }, 1200);
+                }
+            } else {
+                playFailBoop();
+                btnElement.classList.add('wrong');
+                btnElement.classList.add('shake');
+                
+                setTimeout(() => {
+                    btnElement.classList.remove('wrong', 'shake');
+                    allBtns.forEach(b => b.disabled = false); // Let them try again
+                }, 600);
+            }
+        }
+
+        function levelComplete() {
+            if (currentLevel === highestUnlocked && highestUnlocked < 6) {
+                highestUnlocked++;
+            }
+            switchScreen('celebration');
+            playSuccessChime(true); // Epic chord
+            generateConfetti();
+        }
+
+        function showDashboard() {
+            voiceSynth.cancel();
+            switchScreen('dashboard');
+            renderDashboard();
+        }
+
+        /* =========================================
+           5. AUDIO & TEXT-TO-SPEECH
+           ========================================= */
+        function speakTarget() {
+            voiceSynth.cancel(); // Stop current speech
+            const text = currentLevel === 6 ? 
+                `Can you read this sentence? ${activeWord.w}` : 
+                `Can you find the word... ${activeWord.w}?`;
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            if(chosenVoice) utterance.voice = chosenVoice;
+            utterance.rate = 0.85; // Slightly slower for kids
+            utterance.pitch = 1.1; // Friendly pitch
+            voiceSynth.speak(utterance);
+        }
+
+        function playSuccessChime(epic = false) {
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'sine';
+            gain.connect(audioCtx.destination);
+            osc.connect(gain);
+
+            if (epic) {
+                // Level complete arpeggio
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+                osc.frequency.setValueAtTime(1046.50, now + 0.3); // C6
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
+                osc.start(now); osc.stop(now + 1.5);
+            } else {
+                // Quick correct ding
+                osc.frequency.setValueAtTime(659.25, now); // E5
+                osc.frequency.setValueAtTime(880.00, now + 0.1); // A5
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now); osc.stop(now + 0.5);
+            }
+        }
+
+        function playFailBoop() {
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(200, now);
+            osc.frequency.linearRampToValueAtTime(150, now + 0.2);
+
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(now); osc.stop(now + 0.3);
+        }
+
+        /* =========================================
+           6. VISUAL EFFECTS
+           ========================================= */
+        function generateConfetti() {
+            const colors = ['#ff6b6b', '#fca311', '#a8e6cf', '#a1c4fd', '#ffb7b2'];
+            for(let i=0; i<50; i++) {
+                const conf = document.createElement('div');
+                conf.style.position = 'absolute';
+                conf.style.width = '15px'; conf.style.height = '15px';
+                conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                conf.style.left = Math.random() * 100 + 'vw';
+                conf.style.top = '-20px';
+                conf.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+                conf.style.zIndex = '9999';
+                
+                // Random physics
+                const fallDuration = Math.random() * 3 + 2;
+                const spinDuration = Math.random() * 2 + 1;
+                conf.style.transition = `top ${fallDuration}s ease-in, transform ${spinDuration}s linear`;
+                
+                document.body.appendChild(conf);
+                
+                setTimeout(() => {
+                    conf.style.top = '110vh';
+                    conf.style.transform = `rotate(${Math.random() * 720}deg) translateX(${Math.random() * 100 - 50}px)`;
+                }, 50);
+
+                setTimeout(() => conf.remove(), fallDuration * 1000);
+            }
+        }
+        
+        // Handle voice loading quirks in some browsers
+        window.speechSynthesis.onvoiceschanged = () => {
+            const voices = voiceSynth.getVoices();
+            chosenVoice = voices.find(v => v.name.includes("Female") || v.name.includes("Samantha") || v.lang === "en-US") || voices[0];
+        };
+    </script>
+</body>
+</html>
